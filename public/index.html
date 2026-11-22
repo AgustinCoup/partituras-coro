@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Partituras del Coro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f1e7; --paper:#fffdf8; --ink:#1f1b16; --muted:#6f665a; --line:#e3d9c6;
+    --accent:#8a2b2b; --accent-2:#c4793a; --ok:#2f6b4f; --shadow:0 1px 2px rgba(40,30,10,.06),0 6px 20px rgba(40,30,10,.07);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#17140f; --paper:#221e17; --ink:#efe7d8; --muted:#a79c8a; --line:#3a3226; --accent:#e08a7a; --accent-2:#e3a565; --shadow:none }
+    .page canvas{ filter: invert(.92) hue-rotate(180deg); }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;line-height:1.45}
+  header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .bar{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:10px}
+  h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:1.25rem;margin:0;letter-spacing:-.01em;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  h1 small{font-family:Inter;font-weight:400;color:var(--muted);font-size:.8rem;margin-left:6px}
+  button,select{font:inherit;color:inherit}
+  .btn{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+  .btn:hover{border-color:var(--accent-2)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn:disabled{opacity:.5;cursor:default}
+  main{max-width:1100px;margin:0 auto;padding:16px}
+  .muted{color:var(--muted)}
+  .notice{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--accent-2);border-radius:10px;padding:12px 14px;margin:12px 0;box-shadow:var(--shadow)}
+  .notice.err{border-left-color:var(--accent)}
+  /* Lista de obras */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:8px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;box-shadow:var(--shadow);transition:transform .12s, border-color .12s;text-align:left}
+  .card:hover{transform:translateY(-2px);border-color:var(--accent-2)}
+  .card h3{font-family:Fraunces,Georgia,serif;margin:0 0 6px;font-size:1.15rem}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted)}
+  /* Vista obra */
+  .songhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:4px 0 10px}
+  .songhead h2{font-family:Fraunces,Georgia,serif;margin:0;font-size:1.6rem}
+  section.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0;box-shadow:var(--shadow)}
+  section.panel h4{margin:0 0 8px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+  .track{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px dashed var(--line)}
+  .track:first-of-type{border-top:0}
+  .track .name{flex:1 1 180px;font-weight:500;min-width:0;overflow-wrap:anywhere}
+  .track audio{flex:1 1 260px;height:36px;min-width:220px}
+  .track.playing .name{color:var(--accent)}
+  .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--paper)}
+  .seg button{border:0;background:none;padding:6px 11px;cursor:pointer;min-width:36px}
+  .seg button.on{background:var(--accent);color:#fff}
+  label.inl{display:inline-flex;gap:6px;align-items:center}
+  select{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:5px 8px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .scorewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
+  .pages{margin:0 auto}
+  .page{position:relative;margin:0 auto 14px;background:#fff;box-shadow:var(--shadow);border-radius:4px;overflow:hidden}
+  .page canvas{display:block;width:100%;height:auto}
+  .overlay{position:absolute;inset:0;cursor:crosshair;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  .clefchip{position:absolute;transform:translate(0,-100%);font-size:10px;line-height:1;background:rgba(138,43,43,.88);color:#fff;border-radius:5px;padding:2px 5px;border:0;cursor:pointer;opacity:.8;white-space:nowrap}
+  .clefchip:hover{opacity:1}
+  .hide-chips .clefchip{display:none}
+  .mark{position:absolute;pointer-events:none;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;border:3px solid var(--accent-2);animation:pop 1.3s ease-out forwards}
+  .mlabel{position:absolute;pointer-events:none;transform:translate(-50%,-150%);background:var(--accent);color:#fff;font-weight:600;font-size:13px;padding:2px 7px;border-radius:6px;white-space:nowrap;animation:fade 1.6s ease-out forwards}
+  @keyframes pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
+  @keyframes fade{0%,60%{opacity:1}100%{opacity:0}}
+  .lastnote{font-family:Fraunces,Georgia,serif;font-size:1.3rem;min-width:70px;text-align:center}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .help{font-size:.85rem;color:var(--muted);margin:6px 0 0}
+  a{color:var(--accent)}
+  .mark.miss{border-color:var(--muted);width:14px;height:14px;border-width:2px;animation-duration:.6s}
+  .reader{position:fixed;inset:0;z-index:100;background:#2a2620;display:flex;flex-direction:column;color:#f3ecdf}
+  .rtop{display:flex;align-items:center;gap:10px;padding:8px 12px;padding-top:max(8px,env(safe-area-inset-top));background:rgba(0,0,0,.35)}
+  .rtitle{flex:1;font-family:Fraunces,Georgia,serif;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rcount{font-size:.85rem;opacity:.8}
+  .reader .lastnote{font-size:1.1rem;min-width:56px}
+  .rbtn{background:rgba(255,255,255,.12);border:0;color:inherit;border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+  .rbtn:hover{background:rgba(255,255,255,.22)}
+  .rstage{flex:1;min-height:0;position:relative}
+  .rstage.mode-page{display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .rstage.mode-width{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px}
+  .rpage{position:relative;background:#fff;box-shadow:0 4px 30px rgba(0,0,0,.4)}
+  .mode-width .rpage{width:100%;margin:0 auto 10px;max-width:1100px}
+  .rpage img{display:block;width:100%;height:100%;user-select:none;-webkit-user-select:none}
+  .rnav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:72px;border:0;border-radius:12px;background:rgba(0,0,0,.35);color:#fff;font-size:30px;cursor:pointer;z-index:2}
+  .rprev{left:6px}.rnext{right:6px}
+  .rplayer{display:flex;align-items:center;gap:8px;padding:8px 12px;padding-bottom:max(8px,env(safe-area-inset-bottom));background:rgba(0,0,0,.45)}
+  .rplayer input[type=range]{flex:1;min-width:60px;accent-color:var(--accent-2)}
+  .rtime{font-size:.8rem;opacity:.8;white-space:nowrap}
+  .rtname{font-size:.85rem;max-width:30%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media (prefers-color-scheme: dark){ .rpage img{filter:invert(.92) hue-rotate(180deg)} .rpage{background:#1d1b18} }
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <button class="btn hidden" id="backBtn" aria-label="Volver">← Obras</button>
+    <h1 id="title">Partituras del Coro <small id="subtitle"></small></h1>
+    <button class="btn" id="refreshBtn" title="Volver a leer la carpeta de Drive">↻</button>
+    <label class="btn" title="Abrir una partitura PDF o un audio de tu dispositivo">＋ Local<input type="file" id="localFile" accept="application/pdf,audio/*" multiple hidden></label>
+  </div>
+</header>
+<main id="app">
+  <div id="status" class="notice"><span class="spinner"></span> Conectando con Google Drive…</div>
+  <div id="list" class="grid"></div>
+  <div id="song" class="hidden"></div>
+</main>
+
+<script src="lib/pdf.min.js"></script>
+<script src="config.js"></script>
+<script src="staff.js"></script>
+<script>
+(() => {
+  'use strict';
+  const CFG = window.CORO_CONFIG || {};
+  const ROOT_ID = CFG.folderId || '1mglAu1inUXv1etNxQA_QSt99U7gOtBga';
+  const API_KEY = CFG.apiKey && !/^PEGAR/.test(CFG.apiKey) ? CFG.apiKey : '';
+  const DRIVE = 'Google Drive';
+  const DRIVE_URL = 'https://drive.google.com/drive/folders/' + ROOT_ID;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+
+  const $ = (s, el = document) => el.querySelector(s);
+  const h = (tag, attrs = {}, ...kids) => {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else if (v !== undefined && v !== null && v !== false) el.setAttribute(k, v === true ? '' : v);
+    }
+    for (const k of kids.flat()) if (k != null) el.append(k.nodeType ? k : document.createTextNode(k));
+    return el;
+  };
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('coro:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('coro:' + k, JSON.stringify(v)); } catch {} }
+  };
+  const slug = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'obra';
+  const cleanName = n => n.replace(/\.[a-z0-9]{2,4}$/i, '').replace(/[-_]+/g, ' ').trim();
+
+  let mcp = null;
+  let songs = [];          // [{id, title, slug, pdfs:[], audios:[]}]
+  let current = null;
+
+  // ───────────── Drive ─────────────
+  function errText(e) {
+    const code = e && e.code;
+    switch (code) {
+      case 'server_not_connected': return 'Google Drive no está conectado. Agregalo en claude.ai → Configuración → Conectores y recargá.';
+      case 'needs_reauth': return 'La conexión con Google Drive venció. Reconectala en claude.ai → Configuración → Conectores.';
+      case 'selection_required': return 'Tenés más de una conexión de Google Drive: elegí cuál usar en el aviso de Claude.';
+      case 'not_in_manifest': case 'approval_required': case 'consent_required':
+        return 'Esta página necesita tu permiso para leer Google Drive.';
+      case 'blocked_by_policy': return 'Tu organización no permite usar Google Drive desde esta página.';
+      case 'server_unavailable': return 'Google Drive no respondió a tiempo. Probá de nuevo en un momento.';
+      case 'tool_error': return 'Drive devolvió un error: ' + (e.message || '').slice(0, 200);
+      case 'api_forbidden': return 'Google Drive rechazó la clave de API o la carpeta no está compartida como “cualquiera con el enlace”. ' + (e.message || '');
+      case 'api_notfound': return 'No se encontró la carpeta o el archivo en Google Drive (¿está compartido como “cualquiera con el enlace”?).';
+      case 'api_network': return 'No hay conexión con Google Drive. Revisá tu conexión a internet.';
+      case 'no_backend': return 'Falta configurar la clave de API de Google Drive (config.js).';
+      default: return 'No se pudo leer Drive' + (code ? ' (' + code + ')' : '') + '.';
+    }
+  }
+  const needsClick = e => ['not_in_manifest', 'approval_required', 'consent_required'].includes(e && e.code);
+
+  // ── Acceso a Drive: dentro de claude.ai usa el conector; fuera (Vercel), la API pública de Drive ──
+  async function call(tool, input, cache) {
+    try {
+      return await mcp.callTool(DRIVE, tool, input, cache ? { cache } : undefined);
+    } catch (e) {
+      if (e && e.retryable) {
+        await new Promise(r => setTimeout(r, (e.retryAfterMs || 800) + Math.random() * 600));
+        return await mcp.callTool(DRIVE, tool, input, cache ? { cache } : undefined);
+      }
+      throw e;
+    }
+  }
+  const GAPI = 'https://www.googleapis.com/drive/v3/files';
+  async function gfetch(url) {
+    let r;
+    try { r = await fetch(url); } catch (e) { throw { code: 'api_network' }; }
+    if (r.ok) return r;
+    let msg = '';
+    try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch {}
+    if (r.status === 404) throw { code: 'api_notfound', message: msg };
+    if (r.status === 403 || r.status === 400 || r.status === 401) throw { code: 'api_forbidden', message: msg };
+    throw { code: 'api_error', message: msg || ('HTTP ' + r.status), retryable: r.status >= 500 };
+  }
+  const apiMediaUrl = id => `${GAPI}/${encodeURIComponent(id)}?alt=media&supportsAllDrives=true&key=${encodeURIComponent(API_KEY)}`;
+  async function apiList(folderId) {
+    const out = [];
+    let pageToken = '';
+    for (let i = 0; i < 50; i++) {
+      const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`);
+      const fields = encodeURIComponent('nextPageToken,files(id,name,mimeType,parents,modifiedTime,webViewLink,size)');
+      const url = `${GAPI}?q=${q}&fields=${fields}&pageSize=1000&supportsAllDrives=true&includeItemsFromAllDrives=true&key=${encodeURIComponent(API_KEY)}` + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
+      const j = await (await gfetch(url)).json();
+      (j.files || []).forEach(f => out.push({ id: f.id, title: f.name, mimeType: f.mimeType, parentId: (f.parents || [])[0], viewUrl: f.webViewLink, modifiedTime: f.modifiedTime }));
+      pageToken = j.nextPageToken;
+      if (!pageToken) break;
+    }
+    return out;
+  }
+
+  // Drive devuelve páginas cortas y la búsqueda por "ancestros" omite archivos:
+  // se recorre carpeta por carpeta siguiendo todas las páginas.
+  async function listChildren(folderId, fresh) {
+    if (!mcp) return apiList(folderId);
+    const out = [];
+    let pageToken, empty = 0;
+    for (let i = 0; i < 60; i++) {
+      const input = { query: `parentId = '${folderId}' and trashed = false`, excludeContentSnippets: true, pageSize: 100 };
+      if (pageToken) input.pageToken = pageToken;
+      const r = await call('search_files', input, { staleTime: fresh ? 0 : 10 * 60e3, gcTime: 7 * 864e5, refresh: !!fresh });
+      const p = r.payload || {};
+      const files = p.files || [];
+      files.forEach(f => out.push(f));
+      pageToken = p.nextPageToken;
+      if (!pageToken) break;
+      if (!files.length && ++empty > 3) break;
+    }
+    return out;
+  }
+  async function listFolder(fresh, onProgress) {
+    const all = new Map();
+    const queue = [ROOT_ID];
+    const visited = new Set();
+    let firstErr = null;
+    const worker = async () => {
+      while (queue.length) {
+        const id = queue.shift();
+        if (visited.has(id)) continue;
+        visited.add(id);
+        try {
+          const kids = await listChildren(id, fresh);
+          for (const f of kids) {
+            if (!all.has(f.id)) all.set(f.id, f);
+            if (f.mimeType === 'application/vnd.google-apps.folder' && !visited.has(f.id) && visited.size + queue.length < 300) queue.push(f.id);
+          }
+          onProgress && onProgress([...all.values()]);
+        } catch (e) { if (id === ROOT_ID) throw e; firstErr = firstErr || e; }
+      }
+    };
+    await worker();                       // la raíz primero
+    await Promise.all([worker(), worker(), worker(), worker()]);
+    return { files: [...all.values()], partialError: firstErr };
+  }
+
+  function buildSongs(files) {
+    const folders = new Map(files.filter(f => f.mimeType === 'application/vnd.google-apps.folder').map(f => [f.id, f]));
+    const groups = new Map();
+    const songOf = f => {
+      // sube hasta la carpeta hija directa de la raíz
+      let pid = f.parentId, last = null, guard = 0;
+      while (pid && pid !== ROOT_ID && folders.has(pid) && guard++ < 10) { last = pid; pid = folders.get(pid).parentId; }
+      return last || (f.parentId === ROOT_ID ? '_root' : f.parentId);
+    };
+    for (const [id, f] of folders) if (f.parentId === ROOT_ID) groups.set(id, { id, title: f.title, pdfs: [], audios: [], url: f.viewUrl });
+    for (const f of files) {
+      if (f.mimeType === 'application/vnd.google-apps.folder') continue;
+      const isPdf = f.mimeType === 'application/pdf';
+      const isAudio = /^audio\//.test(f.mimeType) || /\.(mp3|m4a|wav|ogg|aac|flac|opus)$/i.test(f.title);
+      if (!isPdf && !isAudio) continue;
+      const gid = songOf(f);
+      if (!groups.has(gid)) groups.set(gid, { id: gid, title: gid === '_root' ? 'Otros archivos' : (folders.get(gid)?.title || 'Otros'), pdfs: [], audios: [] });
+      groups.get(gid)[isPdf ? 'pdfs' : 'audios'].push(f);
+    }
+    const list = [...groups.values()];
+    list.forEach(s => {
+      s.slug = slug(s.title);
+      s.pdfs.sort((a, b) => a.title.localeCompare(b.title, 'es'));
+      s.audios.sort((a, b) => a.title.localeCompare(b.title, 'es', { numeric: true }));
+    });
+    list.sort((a, b) => a.title.localeCompare(b.title, 'es'));
+    return list;
+  }
+
+  function findBase64(obj) {
+    let best = null;
+    const walk = (v, depth) => {
+      if (depth > 6 || v == null) return;
+      if (typeof v === 'string') {
+        let s = v;
+        const m = s.match(/^data:[^;]+;base64,/);
+        if (m) s = s.slice(m[0].length);
+        if (s.length > 200 && (!best || s.length > best.length) && /^[A-Za-z0-9+/=_\-\s]+$/.test(s.slice(0, 2000))) best = s;
+        else if (s.length > 200 && s.trim().startsWith('{')) { try { walk(JSON.parse(s), depth + 1); } catch {} }
+        return;
+      }
+      if (Array.isArray(v)) v.forEach(x => walk(x, depth + 1));
+      else if (typeof v === 'object') Object.values(v).forEach(x => walk(x, depth + 1));
+    };
+    walk(obj, 0);
+    return best;
+  }
+  function b64ToBytes(b64) {
+    b64 = b64.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  const memFiles = new Map();
+  async function downloadFile(f) {
+    if (f.localBlob) return new Uint8Array(await f.localBlob.arrayBuffer());
+    if (memFiles.has(f.id)) return memFiles.get(f.id);
+    if (!mcp) {
+      const buf = new Uint8Array(await (await gfetch(apiMediaUrl(f.id))).arrayBuffer());
+      memFiles.set(f.id, buf);
+      return buf;
+    }
+    const r = await call('download_file_content', { fileId: f.id }, { staleTime: 864e5, gcTime: 7 * 864e5 });
+    const b64 = findBase64(r.payload) || findBase64(r.structuredContent) || findBase64(r.content);
+    if (!b64) throw { code: 'tool_error', message: 'Drive no devolvió el contenido del archivo.' };
+    const bytes = b64ToBytes(b64);
+    memFiles.set(f.id, bytes);
+    return bytes;
+  }
+
+  // ───────────── Sonido ─────────────
+  let actx = null;
+  function audioCtx() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  // Piano sintetizado: parciales levemente inarmónicos, dos cuerdas por nota,
+  // golpe de martillo, brillo que decae y una sala corta. Suena mientras se mantiene el dedo.
+  let master = null;
+  function pianoBus() {
+    const ctx = audioCtx();
+    if (master) return master;
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14; comp.knee.value = 10; comp.ratio.value = 3; comp.attack.value = 0.003; comp.release.value = 0.2;
+    const out = ctx.createGain(); out.gain.value = 0.9;
+    // reverberación corta (respuesta al impulso generada)
+    const len = Math.round(ctx.sampleRate * 1.1);
+    const ir = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = ir.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2) * (i < 200 ? i / 200 : 1);
+    }
+    const conv = ctx.createConvolver(); conv.buffer = ir;
+    const wet = ctx.createGain(); wet.gain.value = 0.11;
+    const dry = ctx.createGain(); dry.gain.value = 1;
+    dry.connect(comp); wet.connect(conv).connect(comp); comp.connect(out).connect(ctx.destination);
+    master = { dry, wet };
+    return master;
+  }
+  let noiseBuf = null;
+  function noteOn(midi) {
+    const ctx = audioCtx();
+    const bus = pianoBus();
+    const t = ctx.currentTime + 0.005;
+    const f0 = 440 * Math.pow(2, (midi - 69) / 12);
+    const lowness = Math.max(0, Math.min(1, (84 - midi) / 48));          // 1 grave … 0 agudo
+    const sustainT = 0.9 + 3.2 * lowness;                                 // tiempo de decaimiento lento
+    const vol = 0.20 * (0.85 + 0.3 * (1 - lowness));
+    const B = 0.00008 * Math.pow(2, (midi - 60) / 24);                    // inarmonicidad
+    const voice = ctx.createGain(); voice.gain.value = 1;
+    const tone = ctx.createBiquadFilter(); tone.type = 'lowpass'; tone.Q.value = 0.4;
+    const bright = Math.min(16000, f0 * 18 + 2500);
+    tone.frequency.setValueAtTime(bright, t);
+    tone.frequency.setTargetAtTime(Math.min(9000, f0 * 6 + 1200), t + 0.02, 0.45);
+    tone.connect(voice); voice.connect(bus.dry); voice.connect(bus.wet);
+    const oscs = [];
+    for (let n = 1; n <= 12; n++) {
+      const fn = n * f0 * Math.sqrt(1 + B * n * n);
+      if (fn > 14000) break;
+      const amp = vol * Math.pow(n, -1.15) * (n === 1 ? 1 : n === 2 ? 0.75 : 0.6) * (1 + 0.35 * Math.sin(n * 1.7));
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(amp, t + 0.003);
+      // caída rápida inicial y luego larga, más corta en los parciales altos
+      g.gain.setTargetAtTime(amp * 0.38, t + 0.004, 0.08 / Math.sqrt(n));
+      g.gain.setTargetAtTime(0, t + 0.25, sustainT / (1 + 0.35 * (n - 1)));
+      for (const det of [-0.9, 0.9]) {                                    // dos cuerdas levemente desafinadas
+        const o = ctx.createOscillator();
+        o.type = 'sine'; o.frequency.value = fn; o.detune.value = det * (n === 1 ? 1 : 1.4);
+        o.connect(g); o.start(t); oscs.push(o);
+      }
+      g.connect(tone);
+    }
+    // golpe del martillo
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, Math.round(ctx.sampleRate * 0.05), ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const nz = ctx.createBufferSource(); nz.buffer = noiseBuf;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = Math.min(6000, f0 * 3.5); bp.Q.value = 1.2;
+    const ng = ctx.createGain(); ng.gain.setValueAtTime(vol * 0.35, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.035);
+    nz.connect(bp).connect(ng).connect(tone); nz.start(t); nz.stop(t + 0.05);
+    const maxLen = Math.min(9, sustainT * 3.2);
+    oscs.forEach(o => o.stop(t + maxLen));
+    const started = performance.now();
+    let released = false;
+    return {
+      release() {
+        if (released) return; released = true;
+        const wait = Math.max(0, 220 - (performance.now() - started));     // duración mínima
+        setTimeout(() => {
+          const now = ctx.currentTime;
+          voice.gain.cancelScheduledValues(now);
+          voice.gain.setValueAtTime(voice.gain.value, now);
+          voice.gain.setTargetAtTime(0, now, 0.07);                          // apagador
+          oscs.forEach(o => { try { o.stop(now + 0.6); } catch {} });
+        }, wait);
+      }
+    };
+  }
+
+  // ───────────── Teoría ─────────────
+  const LETTERS = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si'];
+  const SEMI = [0, 2, 4, 5, 7, 9, 11];
+  const SHARP_ORDER = [3, 0, 4, 1, 5, 2, 6]; // F C G D A E B
+  const FLAT_ORDER = [6, 2, 5, 1, 4, 0, 3];  // B E A D G C F
+  const KEYS = [
+    [-7, '7♭ (Do♭ / La♭m)'], [-6, '6♭ (Sol♭ / Mi♭m)'], [-5, '5♭ (Re♭ / Si♭m)'], [-4, '4♭ (La♭ / Fam)'], [-3, '3♭ (Mi♭ / Dom)'],
+    [-2, '2♭ (Si♭ / Solm)'], [-1, '1♭ (Fa / Rem)'], [0, 'Sin alteraciones (Do / Lam)'], [1, '1♯ (Sol / Mim)'], [2, '2♯ (Re / Sim)'],
+    [3, '3♯ (La / Fa♯m)'], [4, '4♯ (Mi / Do♯m)'], [5, '5♯ (Si / Sol♯m)'], [6, '6♯ (Fa♯ / Re♯m)'], [7, '7♯ (Do♯ / La♯m)']
+  ];
+  function keyAcc(letter, key) {
+    if (key > 0 && SHARP_ORDER.slice(0, key).includes(letter)) return 1;
+    if (key < 0 && FLAT_ORDER.slice(0, -key).includes(letter)) return -1;
+    return 0;
+  }
+  const CLEFS = ['treble', 'treble8', 'bass'];
+  const CLEF_LABEL = { treble: '𝄞 Sol', treble8: '𝄞₈ Sol 8', bass: '𝄢 Fa' };
+
+  // ───────────── UI: lista ─────────────
+  function setStatus(html, kind) {
+    const el = $('#status');
+    if (!html) { el.classList.add('hidden'); return; }
+    el.className = 'notice' + (kind === 'err' ? ' err' : '');
+    el.innerHTML = '';
+    if (typeof html === 'string') el.innerHTML = html; else el.append(html);
+  }
+
+  function renderList(loading) {
+    const list = $('#list');
+    list.innerHTML = '';
+    if (!songs.length) {
+      if (loading) return;
+      setStatus(h('div', {}, 'No encontré partituras en la carpeta. ', h('a', { href: DRIVE_URL, target: '_blank', rel: 'noopener' }, 'Abrir la carpeta en Drive')));
+      return;
+    }
+    if (loading) setStatus('<span class="spinner"></span> Leyendo carpetas…'); else setStatus(null);
+    for (const s of songs) {
+      list.append(h('button', { class: 'card', onclick: () => openSong(s) },
+        h('h3', {}, s.title),
+        h('div', { class: 'chips' },
+          h('span', { class: 'chip' }, s.pdfs.length ? `${s.pdfs.length} partitura${s.pdfs.length > 1 ? 's' : ''}` : 'sin partitura'),
+          h('span', { class: 'chip' }, s.audios.length ? `${s.audios.length} audio${s.audios.length > 1 ? 's' : ''}` : 'sin audios'))));
+    }
+  }
+
+  async function loadDrive(fresh) {
+    if (!mcp && !API_KEY) return;
+    setStatus('<span class="spinner"></span> Leyendo la carpeta de Drive…');
+    try {
+      const progress = files => { songs = buildSongs(files); if (!current) renderList(true); };
+      const { files, partialError } = await listFolder(fresh, progress);
+      songs = buildSongs(files);
+      $('#subtitle').textContent = songs.length ? `· ${songs.length} obras` : '';
+      if (!current) renderList();
+      if (partialError && !current) setStatus('Algunas carpetas no se pudieron leer: ' + errText(partialError), 'err');
+      if (current && !current.local) { const s2 = songs.find(x => x.id === current.id); if (s2 && (s2.audios.length !== current.audios.length || s2.pdfs.length !== current.pdfs.length)) openSong(s2); }
+      const want = (location.hash || '').slice(1);
+      if (want && !current) { const s = songs.find(x => x.slug === want); if (s) openSong(s); }
+    } catch (e) {
+      const box = h('div', {}, errText(e), ' ');
+      if (needsClick(e)) box.append(h('button', { class: 'btn primary', onclick: () => loadDrive(true) }, 'Permitir y cargar'));
+      else box.append(h('button', { class: 'btn', onclick: () => loadDrive(true) }, 'Reintentar'));
+      box.append(h('p', { class: 'help' }, 'Mientras tanto podés abrir un PDF o audio de tu dispositivo con “＋ Local”.'));
+      setStatus(box, 'err');
+    }
+  }
+
+  // ───────────── UI: obra ─────────────
+  function goHome() {
+    current = null;
+    stopAllAudio();
+    $('#song').classList.add('hidden');
+    $('#song').innerHTML = '';
+    $('#list').classList.remove('hidden');
+    $('#backBtn').classList.add('hidden');
+    $('#title').firstChild.textContent = 'Partituras del Coro ';
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    if (songs.length) renderList();
+  }
+  function stopAllAudio() { document.querySelectorAll('audio').forEach(a => a.pause()); }
+
+  function openSong(s) {
+    current = s;
+    setStatus(null);
+    $('#list').classList.add('hidden');
+    $('#backBtn').classList.remove('hidden');
+    if (s.slug && !s.local) { try { history.replaceState(null, '', '#' + s.slug); } catch {} }
+    const root = $('#song');
+    root.innerHTML = '';
+    root.classList.remove('hidden');
+    root.append(h('div', { class: 'songhead' }, h('h2', {}, s.title),
+      s.url ? h('a', { href: s.url, target: '_blank', rel: 'noopener', class: 'muted' }, 'ver en Drive ↗') : null));
+
+    // Audios
+    const ap = h('section', { class: 'panel' }, h('h4', {}, 'Audios'));
+    if (!s.audios.length) ap.append(h('div', { class: 'muted' }, 'Esta obra no tiene audios en la carpeta.'));
+    s.audios.forEach(f => ap.append(trackRow(f)));
+    root.append(ap);
+
+    // Partitura
+    const sp = h('section', { class: 'panel' }, h('h4', {}, 'Partitura'));
+    root.append(sp);
+    if (!s.pdfs.length) { sp.append(h('div', { class: 'muted' }, 'Esta obra no tiene partitura PDF en la carpeta.')); return; }
+    const tabs = h('div', { class: 'tabs' });
+    const holder = h('div');
+    if (s.pdfs.length > 1) sp.append(tabs);
+    sp.append(holder);
+    const show = (f, btn) => {
+      tabs.querySelectorAll('.btn').forEach(b => b.classList.remove('primary'));
+      if (btn) btn.classList.add('primary');
+      renderScore(f, holder);
+    };
+    s.pdfs.forEach((f, i) => {
+      const b = h('button', { class: 'btn' + (i === 0 ? ' primary' : ''), onclick: () => show(f, b) }, cleanName(f.title));
+      tabs.append(b);
+    });
+    show(s.pdfs[0]);
+    window.scrollTo({ top: 0 });
+  }
+
+  function trackRow(f) {
+    const row = h('div', { class: 'track' });
+    const name = h('div', { class: 'name' }, cleanName(f.title));
+    const btn = h('button', { class: 'btn primary' }, '▶ Cargar');
+    row.append(name, btn);
+    btn.addEventListener('click', async () => {
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Descargando…';
+      try {
+        let url;
+        if (!mcp && !f.localBlob) url = apiMediaUrl(f.id);          // se reproduce mientras descarga
+        else {
+          const bytes = await downloadFile(f);
+          const type = f.mimeType && f.mimeType.startsWith('audio/') ? f.mimeType : 'audio/mpeg';
+          url = URL.createObjectURL(new Blob([bytes], { type }));
+        }
+        const audio = h('audio', { controls: true, preload: 'auto', src: url });
+        audio.dataset.name = cleanName(f.title);
+        audio.addEventListener('play', () => {
+          activeAudio = audio;
+          document.querySelectorAll('audio').forEach(a => { if (a !== audio) a.pause(); });
+          document.querySelectorAll('.track').forEach(t => t.classList.remove('playing'));
+          row.classList.add('playing');
+        });
+        audio.addEventListener('pause', () => row.classList.remove('playing'));
+        const speed = h('select', { title: 'Velocidad' }, ...[0.5, 0.6, 0.75, 0.9, 1, 1.1, 1.25].map(v => h('option', { value: v, selected: v === 1 }, v + '×')));
+        speed.addEventListener('change', () => { audio.playbackRate = +speed.value; audio.preservesPitch = true; });
+        const loop = h('button', { class: 'btn', title: 'Repetir' }, '🔁');
+        loop.addEventListener('click', () => { audio.loop = !audio.loop; loop.classList.toggle('primary', audio.loop); });
+        btn.replaceWith(audio);
+        activeAudio = audio;
+        row.append(speed, loop);
+        audio.play().catch(() => {});
+      } catch (e) {
+        btn.disabled = false; btn.textContent = needsClick(e) ? 'Permitir y cargar' : 'Reintentar';
+        if (!row.querySelector('.help')) row.append(h('div', { class: 'help', style: 'flex-basis:100%' }, errText(e)));
+        else row.querySelector('.help').textContent = errText(e);
+      }
+    });
+    return row;
+  }
+
+  // ───────────── Partitura interactiva ─────────────
+  const DETECT_W = 2000;
+  let accMode = 0;   // 0 auto, 1 ♯, 2 ♮, 3 ♭ (una sola nota)
+  let score = null;  // {file, pages:[{canvas, gray, W, H, staves}], keyManual, refreshChips, lastNote}
+
+  function keyLabel(k) { const e = KEYS.find(x => x[0] === k); return e ? e[1].split(' (')[0] : k; }
+
+  // Toque sobre una página: busca la cabeza de nota y la hace sonar
+  function handleTap(pg, fx, fy, overlay) {
+    const { W, H, staves, gray } = pg;
+    const x = fx * W, y = fy * H;
+    let best = null, bestD = Infinity;
+    for (const s of staves) {
+      if (x < s.x0 - s.space * 2 || x > s.x1 + s.space * 2) continue;
+      const d = y < s.top ? s.top - y : y > s.bottom ? y - s.bottom : 0;
+      if (d < bestD) { bestD = d; best = s; }
+    }
+    if (!best || bestD > best.space * 6) return null;
+    const head = StaffDetect.findNotehead(gray, W, H, best, Math.round(x), Math.round(y));
+    if (!head) { flashMiss(overlay, fx, fy); return null; }
+    const pt = StaffDetect.pitchAt(best, head.y, best.clef, head.step);
+    let acc = [null, 1, 0, -1][accMode];
+    let src = 'manual';
+    if (acc === null) {
+      const local = StaffDetect.accidentalFor(gray, W, H, best, head);
+      if (local != null) { acc = local; src = 'local'; }
+      else { const k = score.keyManual != null ? score.keyManual : best.sysKey; acc = keyAcc(pt.letter, k); src = 'key'; }
+    }
+    const midi = 12 * (pt.octave + 1) + SEMI[pt.letter] + acc;
+    const voice = noteOn(midi);
+    const name = LETTERS[pt.letter] + (acc === 1 ? '♯' : acc === -1 ? '♭' : (src === 'local' && acc === 0) || accMode === 2 ? '♮' : '') + pt.octave;
+    document.querySelectorAll('.lastnote').forEach(el => el.textContent = name);
+    if (accMode) score.setAcc(0);
+    const mk = h('div', { class: 'mark' }); mk.style.left = (head.x / W * 100) + '%'; mk.style.top = (head.y / H * 100) + '%';
+    const lb = h('div', { class: 'mlabel' }, name); lb.style.left = (head.x / W * 100) + '%'; lb.style.top = ((head.y - best.space * 0.8) / H * 100) + '%';
+    overlay.append(mk, lb);
+    setTimeout(() => { mk.remove(); lb.remove(); }, 1700);
+    return voice;
+  }
+  // Mantener el dedo = la nota suena; soltar = se apaga. Si el dedo se mueve (desplazamiento), no suena.
+  function bindPress(el, getPg, isBlocked) {
+    let pending = null, voice = null, sx = 0, sy = 0;
+    const stop = () => { if (pending) { clearTimeout(pending); pending = null; } if (voice) { voice.release(); voice = null; } };
+    el.addEventListener('pointerdown', ev => {
+      if (ev.button > 0 || ev.target.closest('.clefchip')) return;
+      audioCtx();                         // desbloquea el audio dentro del gesto
+      stop();
+      sx = ev.clientX; sy = ev.clientY;
+      const r = el.getBoundingClientRect();
+      const fx = (ev.clientX - r.left) / r.width, fy = (ev.clientY - r.top) / r.height;
+      const delay = ev.pointerType === 'touch' ? 70 : 0;
+      const go = () => { pending = null; if (isBlocked && isBlocked()) return; voice = handleTap(getPg(), fx, fy, el) || null; };
+      if (delay) pending = setTimeout(go, delay); else go();
+    });
+    el.addEventListener('pointermove', ev => { if (pending && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 9) { clearTimeout(pending); pending = null; } });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => el.addEventListener(t, stop));
+    el.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  function flashMiss(overlay, fx, fy) {
+    const mk = h('div', { class: 'mark miss' }); mk.style.left = (fx * 100) + '%'; mk.style.top = (fy * 100) + '%';
+    overlay.append(mk); setTimeout(() => mk.remove(), 700);
+  }
+
+  async function renderScore(f, holder) {
+    holder.innerHTML = '';
+    const fid = f.id;
+    const sc = score = { file: f, pages: [], keyManual: store.get('key:' + fid, null) };
+    let zoom = store.get('zoom', 1);
+    const lastNote = h('span', { class: 'lastnote', title: 'Última nota' }, '–');
+
+    const keySel = h('select', { title: 'Armadura' });
+    const fillKeySel = () => {
+      const auto = [...new Set(sc.pages.flatMap(p => p.staves.map(s => s.sysKey)))];
+      const autoTxt = auto.length ? 'Automática (' + auto.map(keyLabel).join(', ') + ')' : 'Automática';
+      keySel.innerHTML = '';
+      keySel.append(h('option', { value: 'auto', selected: sc.keyManual == null }, autoTxt),
+        ...KEYS.map(([v, l]) => h('option', { value: v, selected: sc.keyManual === v }, l)));
+    };
+    fillKeySel();
+    keySel.addEventListener('change', () => {
+      sc.keyManual = keySel.value === 'auto' ? null : +keySel.value;
+      store.set('key:' + fid, sc.keyManual);
+    });
+
+    const accSeg = h('div', { class: 'seg', title: 'Forzar alteración para la próxima nota' });
+    const accBtns = ['Auto', '♯', '♮', '♭'].map((l, i) => {
+      const b = h('button', { class: i === accMode ? 'on' : '' }, l);
+      b.addEventListener('click', () => sc.setAcc(i));
+      accSeg.append(b); return b;
+    });
+    sc.setAcc = i => { accMode = i; document.querySelectorAll('.accseg').forEach(seg => [...seg.children].forEach((b, j) => b.classList.toggle('on', j === i))); };
+    accSeg.classList.add('accseg');
+
+
+    const zoomSeg = h('div', { class: 'seg' });
+    const zooms = [1, 1.5, 2];
+    const zBtns = zooms.map(z => { const b = h('button', { class: z === zoom ? 'on' : '' }, z === 1 ? 'Ajustar' : z + '×'); b.addEventListener('click', () => setZoom(z)); zoomSeg.append(b); return b; });
+
+    const pagesEl = h('div', { class: 'pages hide-chips' });
+    const chipsToggle = h('button', { class: 'btn', title: 'Mostrar las claves detectadas para corregirlas' }, 'Claves');
+    chipsToggle.addEventListener('click', () => { pagesEl.classList.toggle('hide-chips'); chipsToggle.classList.toggle('primary', !pagesEl.classList.contains('hide-chips')); });
+    const readBtn = h('button', { class: 'btn primary', disabled: true }, '📖 Modo lectura');
+    readBtn.addEventListener('click', () => openReader(sc));
+
+    holder.append(
+      h('div', { class: 'tools' }, readBtn,
+        h('label', { class: 'inl' }, 'Armadura', keySel), accSeg, zoomSeg, chipsToggle, lastNote),
+      h('p', { class: 'help' }, 'Mantené el dedo sobre una figura para escuchar su nota. La armadura y las alteraciones (♯ ♭ ♮) escritas en el compás se detectan solas; si algo suena mal, corregí la armadura o forzá la alteración con los botones.'));
+    const wrap = h('div', { class: 'scorewrap' }, pagesEl);
+    holder.append(wrap);
+    const setZoom = z => { zoom = z; store.set('zoom', z); zBtns.forEach((b, i) => b.classList.toggle('on', zooms[i] === z)); pagesEl.style.width = (z * 100) + '%'; };
+    setZoom(zoom);
+
+    const loading = h('div', { class: 'muted' }, h('span', { class: 'spinner' }), ' Descargando partitura…');
+    pagesEl.append(loading);
+    let pdf;
+    try {
+      const bytes = await downloadFile(f);
+      pdf = await pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+    } catch (e) {
+      loading.innerHTML = '';
+      loading.append(e && e.code ? errText(e) : 'No se pudo abrir el PDF.', ' ',
+        h('button', { class: 'btn', onclick: () => renderScore(f, holder) }, needsClick(e) ? 'Permitir y cargar' : 'Reintentar'));
+      return;
+    }
+    if (!holder.isConnected || score !== sc) return;
+    loading.textContent = '';
+    loading.append(h('span', { class: 'spinner' }), ' Analizando pentagramas…');
+
+    const clefOverrides = store.get('clefs:' + fid, {});
+    const applyClefs = (pg) => {
+      let changed = false;
+      for (const s of pg.staves) {
+        const want = clefOverrides[`n${s.systemSize}:${s.pos}`] || s.autoClef;
+        if (s.clef !== want) { s.clef = want; changed = true; try { const k = StaffDetect.detectKey(pg.gray, pg.W, pg.H, s); s.key = k.key; } catch {} }
+      }
+      if (changed) {
+        const bySys = {};
+        pg.staves.forEach(s => (bySys[s.system] = bySys[s.system] || []).push(s.key));
+        pg.staves.forEach(s => {
+          const v = {}; bySys[s.system].forEach(k => v[k] = (v[k] || 0) + 1);
+          s.sysKey = +Object.entries(v).sort((a, b) => b[1] - a[1] || Math.abs(b[0]) - Math.abs(a[0]))[0][0];
+        });
+      }
+    };
+
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      if (!holder.isConnected || score !== sc) return;
+      const vp1 = page.getViewport({ scale: 1 });
+      const pageEl = h('div', { class: 'page' });
+      const canvas = h('canvas');
+      const overlay = h('div', { class: 'overlay' });
+      pageEl.append(canvas, overlay);
+      pageEl.style.aspectRatio = `${vp1.width} / ${vp1.height}`;
+      loading.before(pageEl);
+
+      const scale = DETECT_W / vp1.width;
+      const vp = page.getViewport({ scale });
+      canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      await new Promise(r => setTimeout(r, 0));
+
+      const toGray = (c) => {
+        const d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data;
+        const gr = new Uint8Array(c.width * c.height);
+        for (let i = 0, j = 0; j < gr.length; i += 4, j++) gr[j] = (d[i] * 77 + d[i + 1] * 150 + d[i + 2] * 29) >> 8;
+        return gr;
+      };
+      let W = canvas.width, H = canvas.height;
+      let gray = toGray(canvas);
+      let staves = StaffDetect.detectStaves(gray, W, H);
+      // pentagramas chicos: se analizan en mayor resolución (~17 px por espacio)
+      const sp0 = staves.length ? staves.reduce((a, b) => a + b.space, 0) / staves.length : 0;
+      if (sp0 && sp0 < 19) {
+        const k = Math.min(21 / sp0, 3600 / canvas.width);
+        if (k > 1.1) {
+          const hv = page.getViewport({ scale: scale * k });
+          const hc = document.createElement('canvas');
+          hc.width = Math.round(hv.width); hc.height = Math.round(hv.height);
+          const hctx = hc.getContext('2d', { willReadFrequently: true });
+          hctx.fillStyle = '#fff'; hctx.fillRect(0, 0, hc.width, hc.height);
+          await page.render({ canvasContext: hctx, viewport: hv }).promise;
+          W = hc.width; H = hc.height;
+          gray = toGray(hc);
+          hc.width = hc.height = 1;
+          staves = StaffDetect.detectStaves(gray, W, H);
+        }
+      }
+      staves.forEach(s => s.autoClef = s.clef);
+      const pg = { canvas, gray, W, H, staves, num: p, ratio: vp1.height / vp1.width };
+      applyClefs(pg);
+      sc.pages.push(pg);
+      window.__coro = { score: sc };
+      fillKeySel();
+
+      const drawChips = () => {
+        overlay.querySelectorAll('.clefchip').forEach(c => c.remove());
+        staves.forEach(s => {
+          const chip = h('button', { class: 'clefchip', title: 'Cambiar clave' }, CLEF_LABEL[s.clef] + ' · ' + keyLabel(s.sysKey));
+          chip.style.left = (s.x0 / W * 100) + '%';
+          chip.style.top = ((s.top - s.space * 0.15) / H * 100) + '%';
+          chip.addEventListener('click', ev => {
+            ev.stopPropagation();
+            const next = CLEFS[(CLEFS.indexOf(s.clef) + 1) % CLEFS.length];
+            clefOverrides[`n${s.systemSize}:${s.pos}`] = next;
+            store.set('clefs:' + fid, clefOverrides);
+            sc.pages.forEach(applyClefs);
+            fillKeySel();
+            pagesEl.querySelectorAll('.overlay').forEach(o => o._redraw && o._redraw());
+          });
+          overlay.append(chip);
+        });
+      };
+      overlay._redraw = drawChips;
+      drawChips();
+      if (!staves.length) overlay.append(h('div', { class: 'mlabel', style: 'left:50%;top:6%;animation:none;transform:translate(-50%,0)' }, 'No detecté pentagramas en esta página'));
+
+      bindPress(overlay, () => pg);
+      readBtn.disabled = false;
+    }
+    loading.remove();
+  }
+
+  // ───────────── Modo lectura ─────────────
+  let activeAudio = null;
+  async function openReader(sc) {
+    if (!sc || !sc.pages.length) return;
+    const fmt = t => isFinite(t) ? Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0') : '0:00';
+    let mode = store.get('readerMode', 'page');
+    let idx = 0;
+    const urls = await Promise.all(sc.pages.map(pg => new Promise(res => pg.canvas.toBlob(b => res(URL.createObjectURL(b)), 'image/png'))));
+    const stage = h('div', { class: 'rstage' });
+    const counter = h('span', { class: 'rcount' });
+    const modeBtn = h('button', { class: 'rbtn', title: 'Página entera / ajustar al ancho' });
+    const closeBtn = h('button', { class: 'rbtn', title: 'Salir (Esc)' }, '✕');
+    const prevBtn = h('button', { class: 'rnav rprev', title: 'Página anterior' }, '‹');
+    const nextBtn = h('button', { class: 'rnav rnext', title: 'Página siguiente' }, '›');
+    const last = h('span', { class: 'lastnote' }, '–');
+    const top = h('div', { class: 'rtop' }, h('span', { class: 'rtitle' }, current ? current.title : cleanName(sc.file.title)), counter, last, modeBtn, closeBtn);
+    // mini reproductor del audio activo
+    const player = h('div', { class: 'rplayer hidden' });
+    const reader = h('div', { class: 'reader' }, top, stage, prevBtn, nextBtn, player);
+    document.body.append(reader);
+    document.body.style.overflow = 'hidden';
+    let wake = null;
+    try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch {}
+    try { if (reader.requestFullscreen) await reader.requestFullscreen(); } catch {}
+
+    const pageEls = sc.pages.map((pg, i) => {
+      const img = h('img', { src: urls[i], alt: 'Página ' + (i + 1), draggable: 'false' });
+      const ov = h('div', { class: 'overlay' });
+      const box = h('div', { class: 'rpage' }, img, ov);
+      box.style.aspectRatio = `1 / ${pg.ratio}`;
+      bindPress(ov, () => pg, () => moved);
+      return box;
+    });
+    const layout = () => {
+      stage.className = 'rstage ' + (mode === 'page' ? 'mode-page' : 'mode-width');
+      modeBtn.textContent = mode === 'page' ? '↔ Ancho' : '▭ Página';
+      stage.innerHTML = '';
+      if (mode === 'page') { stage.append(pageEls[idx]); fitPage(); }
+      else { pageEls.forEach(el => { el.style.width = ''; el.style.height = ''; stage.append(el); }); requestAnimationFrame(() => pageEls[idx].scrollIntoView({ block: 'start' })); }
+      counter.textContent = `${idx + 1} / ${pageEls.length}`;
+      prevBtn.classList.toggle('hidden', mode !== 'page' || idx === 0);
+      nextBtn.classList.toggle('hidden', mode !== 'page' || idx === pageEls.length - 1);
+    };
+    const fitPage = () => {
+      const el = pageEls[idx], pg = sc.pages[idx];
+      const aw = stage.clientWidth - 8, ah = stage.clientHeight - 8;
+      let w = aw, hh = aw * pg.ratio;
+      if (hh > ah) { hh = ah; w = ah / pg.ratio; }
+      el.style.width = w + 'px'; el.style.height = hh + 'px';
+    };
+    const go = d => { const n = Math.max(0, Math.min(pageEls.length - 1, idx + d)); if (n !== idx) { idx = n; layout(); } };
+    modeBtn.addEventListener('click', () => { mode = mode === 'page' ? 'width' : 'page'; store.set('readerMode', mode); layout(); });
+    prevBtn.addEventListener('click', () => go(-1));
+    nextBtn.addEventListener('click', () => go(1));
+    stage.addEventListener('scroll', () => {
+      if (mode !== 'width') return;
+      const mid = stage.scrollTop + stage.clientHeight / 3;
+      let i = 0; pageEls.forEach((el, k) => { if (el.offsetTop <= mid) i = k; });
+      if (i !== idx) { idx = i; counter.textContent = `${idx + 1} / ${pageEls.length}`; }
+    });
+    // deslizar para pasar página
+    let sx = 0, sy = 0, moved = false;
+    stage.addEventListener('touchstart', e => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; moved = false; }, { passive: true });
+    stage.addEventListener('touchmove', e => { const t = e.touches[0]; if (Math.abs(t.clientX - sx) > 12 || Math.abs(t.clientY - sy) > 12) moved = true; }, { passive: true });
+    stage.addEventListener('touchend', e => {
+      if (mode !== 'page' || e.touches.length) return;
+      const t = e.changedTouches[0]; const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1);
+      setTimeout(() => moved = false, 50);
+    });
+    const onKey = e => {
+      if (e.key === 'Escape') close();
+      else if (['ArrowRight', 'PageDown', ' '].includes(e.key) && mode === 'page') { e.preventDefault(); go(1); }
+      else if (['ArrowLeft', 'PageUp'].includes(e.key) && mode === 'page') { e.preventDefault(); go(-1); }
+    };
+    document.addEventListener('keydown', onKey);
+    const onResize = () => { if (mode === 'page') fitPage(); };
+    window.addEventListener('resize', onResize);
+
+    // reproductor
+    let tick = null;
+    const buildPlayer = () => {
+      const a = activeAudio;
+      if (!a || !a.isConnected) { player.classList.add('hidden'); return; }
+      player.classList.remove('hidden');
+      player.innerHTML = '';
+      const pp = h('button', { class: 'rbtn' }, a.paused ? '▶' : '⏸');
+      const seek = h('input', { type: 'range', min: 0, max: 1000, value: 0 });
+      const tm = h('span', { class: 'rtime' }, '0:00');
+      const nm = h('span', { class: 'rtname' }, a.dataset.name || '');
+      pp.addEventListener('click', () => { a.paused ? a.play().catch(() => {}) : a.pause(); });
+      seek.addEventListener('input', () => { if (isFinite(a.duration)) a.currentTime = seek.value / 1000 * a.duration; });
+      const back = h('button', { class: 'rbtn', title: '−5 s' }, '↺5');
+      back.addEventListener('click', () => { a.currentTime = Math.max(0, a.currentTime - 5); });
+      player.append(back, pp, nm, seek, tm);
+      clearInterval(tick);
+      tick = setInterval(() => {
+        pp.textContent = a.paused ? '▶' : '⏸';
+        if (isFinite(a.duration)) { seek.value = Math.round(a.currentTime / a.duration * 1000); tm.textContent = fmt(a.currentTime) + ' / ' + fmt(a.duration); }
+      }, 250);
+    };
+    buildPlayer();
+
+    const close = () => {
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+      clearInterval(tick);
+      try { if (document.fullscreenElement) document.exitFullscreen(); } catch {}
+      try { wake && wake.release(); } catch {}
+      reader.remove();
+      document.body.style.overflow = '';
+      urls.forEach(u => URL.revokeObjectURL(u));
+    };
+    closeBtn.addEventListener('click', close);
+    layout();
+  }
+
+  // ───────────── Archivos locales ─────────────
+  $('#localFile').addEventListener('change', ev => {
+    const files = [...ev.target.files];
+    if (!files.length) return;
+    const s = { id: 'local', title: 'Archivos locales', local: true, pdfs: [], audios: [] };
+    files.forEach((file, i) => {
+      const f = { id: 'local-' + Date.now() + '-' + i, title: file.name, mimeType: file.type, localBlob: file };
+      (file.type === 'application/pdf' ? s.pdfs : s.audios).push(f);
+    });
+    openSong(s);
+    ev.target.value = '';
+  });
+
+  $('#backBtn').addEventListener('click', goHome);
+  $('#refreshBtn').addEventListener('click', () => { if (!current) loadDrive(true); else loadDrive(true).then(() => {}); });
+  window.addEventListener('hashchange', () => {
+    const want = location.hash.slice(1);
+    if (!want) { if (current) goHome(); return; }
+    const s = songs.find(x => x.slug === want);
+    if (s && s !== current) openSong(s);
+  });
+
+  // ───────────── Inicio ─────────────
+  (async () => {
+    try { mcp = window.claude && window.claude.use ? await window.claude.use('mcp') : null; } catch { mcp = null; }
+    if (!mcp && API_KEY) { loadDrive(false); return; }
+    if (!mcp) {
+      setStatus(h('div', {},
+        'Falta la clave de API de Google Drive en config.js (ver README). Mientras tanto, ',
+        h('a', { href: DRIVE_URL, target: '_blank', rel: 'noopener' }, 'o abrí la carpeta en Drive'),
+        ', descargá los archivos y cargalos con “＋ Local”.'), 'err');
+      return;
+    }
+    loadDrive(false);
+  })();
+})();
+</script>
+</body>
+</html>

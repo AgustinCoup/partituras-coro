@@ -1,0 +1,10 @@
+{
+  "name": "partituras-coro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Partituras del coro: lectura, audios por cuerda y notas al tocar la partitura",
+  "scripts": {
+    "build": "node build-config.js",
+    "dev": "node build-config.js && npx serve public -l 3000"
+  }
+}
