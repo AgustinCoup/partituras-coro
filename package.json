@@ -6,5 +6,8 @@
   "scripts": {
     "build": "node build-config.js",
     "dev": "node build-config.js && npx serve public -l 3000"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }
